@@ -73,3 +73,18 @@ yarn-error.log*
 # yarn.lock
 # poetry.lock
 
+# Fichiers volumineux et générés
+frontend/node_modules/
+frontend/.cache/
+frontend/build/
+backend/staticfiles/
+backend/media/
+
+# Fichiers de package managers
+package-lock.json
+yarn.lock
+
+# Fichiers de migration (déjà générés)
+**/migrations/*.py
+!**/migrations/__init__.py
+

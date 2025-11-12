@@ -1,0 +1,54 @@
+{
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/my_env": true,
+    "**/venv": true,
+    "**/.venv": true,
+    "**/env": true,
+    "**/*.pyc": true,
+    "**/.cache": true,
+    "**/build": true,
+    "**/dist": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/__pycache__/**": true,
+    "**/my_env/**": true,
+    "**/venv/**": true,
+    "**/.venv/**": true,
+    "**/env/**": true,
+    "**/.cache/**": true,
+    "**/build/**": true,
+    "**/dist/**": true,
+    "**/*.pyc": true,
+    "**/package-lock.json": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/package-lock.json": true,
+    "**/__pycache__": true,
+    "**/my_env": true,
+    "**/venv": true,
+    "**/.venv": true,
+    "**/env": true,
+    "**/.cache": true,
+    "**/build": true,
+    "**/dist": true
+  },
+  "git.ignoreLimitWarning": true,
+  "git.autofetch": false,
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "python.analysis.exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/my_env",
+    "**/venv",
+    "**/.venv",
+    "**/env"
+  ],
+  "typescript.tsserver.maxTsServerMemory": 4096
+}
+
