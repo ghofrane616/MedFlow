@@ -2,7 +2,7 @@
  * Page Détail de Conversation
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiSend, FiTrash2 } from 'react-icons/fi';
 import {
@@ -33,20 +33,62 @@ const ConversationDetail = () => {
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
+  const fetchMessages = useCallback(async () => {
+    try {
+      const data = await getMessages(conversationId);
+      setMessages(data);
+
+      // Marquer les messages non lus comme lus
+      const unreadMessages = data.filter(
+        msg => !msg.is_read && msg.sender.id !== currentUser.id
+      );
+
+      for (const msg of unreadMessages) {
+        try {
+          await markMessageAsRead(msg.id);
+        } catch (error) {
+          console.error('Erreur lors du marquage du message comme lu:', error);
+        }
+      }
+
+      setIsInitialLoad(false);
+    } catch (error) {
+      console.error('Erreur lors du chargement des messages:', error);
+    }
+  }, [conversationId, currentUser.id]);
+
+  const fetchConversationData = useCallback(async () => {
+    try {
+      const data = await getConversation(conversationId);
+      setConversation(data);
+      await fetchMessages();
+    } catch (error) {
+      console.error('Erreur lors du chargement de la conversation:', error);
+      setModalConfig({
+        type: 'error',
+        title: '❌ Erreur',
+        message: 'Impossible de charger la conversation'
+      });
+      setShowModal(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [conversationId, fetchMessages]);
+
   useEffect(() => {
     // Réinitialiser le flag quand on change de conversation
     setIsInitialLoad(true);
     fetchConversationData();
     const interval = setInterval(fetchMessages, 3000); // Rafraîchir tous les 3 secondes
     return () => clearInterval(interval);
-  }, [conversationId]);
+  }, [conversationId, fetchConversationData, fetchMessages]);
 
   useEffect(() => {
     // Ne pas scroller au premier chargement
     if (!isInitialLoad) {
       scrollToBottom();
     }
-  }, [messages]);
+  }, [messages, isInitialLoad]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -67,7 +109,7 @@ const ConversationDetail = () => {
       await deleteConversation(conversationId);
       setModalConfig({
         type: 'success',
-        title: '✓ Conversation supprimée',
+        title: ' Conversation supprimée',
         message: 'La conversation a été supprimée avec succès'
       });
       setShowModal(true);
@@ -84,47 +126,7 @@ const ConversationDetail = () => {
     }
   };
 
-  const fetchConversationData = async () => {
-    try {
-      setLoading(true);
-      const [convData, messagesData] = await Promise.all([
-        getConversation(conversationId),
-        getMessages(conversationId, { ordering: 'created_at' })
-      ]);
-      setConversation(convData);
-      setMessages(messagesData);
 
-      // Marquer les messages comme lus
-      messagesData.forEach(msg => {
-        if (!msg.is_read && Number(msg.sender) !== Number(currentUser.id)) {
-          markMessageAsRead(msg.id).catch(console.error);
-        }
-      });
-
-      // Désactiver le flag de chargement initial après le premier chargement
-      if (isInitialLoad) {
-        setIsInitialLoad(false);
-      }
-    } catch (error) {
-      setModalConfig({
-        type: 'error',
-        title: '❌ Erreur',
-        message: 'Impossible de charger la conversation'
-      });
-      setShowModal(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMessages = async () => {
-    try {
-      const messagesData = await getMessages(conversationId, { ordering: 'created_at' });
-      setMessages(messagesData);
-    } catch (error) {
-      console.error('Erreur lors du rafraîchissement des messages:', error);
-    }
-  };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -168,7 +170,7 @@ const ConversationDetail = () => {
         setMessages(messages.filter(m => m.id !== pendingDeleteId));
         setModalConfig({
           type: 'success',
-          title: '✓ Message supprimé',
+          title: ' Message supprimé',
           message: 'Le message a été supprimé avec succès'
         });
         setShowModal(true);

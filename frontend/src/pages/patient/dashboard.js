@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMyAppointments } from '../../api/appointments';
+import { getMyAppointments, hideAppointmentForPatient } from '../../api/appointments';
 import { getMyProfile, getMedicalHistory } from '../../api/patients';
 import '../../styles/Dashboard.css';
 
@@ -20,50 +20,11 @@ const PatientDashboard = () => {
   });
   const [countdown, setCountdown] = useState('');
   const [recentCompletedAppointments, setRecentCompletedAppointments] = useState([]);
-  const [monthlyStats, setMonthlyStats] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [upcomingReminders, setUpcomingReminders] = useState([]);
-  const [healthScore, setHealthScore] = useState(0);
   const [medications, setMedications] = useState([]);
 
-  useEffect(() => {
-    fetchPatientData();
-  }, []);
-
-  // Compte à rebours pour le prochain rendez-vous
-  useEffect(() => {
-    if (!nextAppointment) return;
-
-    const updateCountdown = () => {
-      const now = new Date();
-      const appointmentDate = new Date(nextAppointment.appointment_date);
-      const diff = appointmentDate - now;
-
-      if (diff <= 0) {
-        setCountdown('Rendez-vous en cours ou passé');
-        return;
-      }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-      if (days > 0) {
-        setCountdown(`Dans ${days} jour${days > 1 ? 's' : ''} et ${hours} heure${hours > 1 ? 's' : ''}`);
-      } else if (hours > 0) {
-        setCountdown(`Dans ${hours} heure${hours > 1 ? 's' : ''} et ${minutes} minute${minutes > 1 ? 's' : ''}`);
-      } else {
-        setCountdown(`Dans ${minutes} minute${minutes > 1 ? 's' : ''}`);
-      }
-    };
-
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 60000); // Mise à jour chaque minute
-
-    return () => clearInterval(interval);
-  }, [nextAppointment]);
-
-  const fetchPatientData = async () => {
+  const fetchPatientData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -121,8 +82,7 @@ const PatientDashboard = () => {
       setRecentCompletedAppointments(completedAppointments);
 
       // Calculer les statistiques mensuelles pour le graphique (6 derniers mois)
-      const monthlyData = calculateMonthlyStats(appointmentsData);
-      setMonthlyStats(monthlyData);
+      calculateMonthlyStats(appointmentsData);
 
       // Générer les rappels pour les rendez-vous à venir
       const reminders = generateReminders(futureAppointments);
@@ -141,15 +101,69 @@ const PatientDashboard = () => {
       }
 
       // Calculer le score de santé
-      const score = calculateHealthScore(appointmentsData, profile);
-      setHealthScore(score);
+      calculateHealthScore(appointmentsData, profile);
 
     } catch (error) {
       console.error('Erreur lors de la récupération des données:', error);
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    fetchPatientData();
+  }, [fetchPatientData]);
+
+  // Fonction pour masquer un rendez-vous annulé
+  const handleHideAppointment = async (appointmentId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous annulé de votre liste ?')) {
+      return;
+    }
+
+    try {
+      await hideAppointmentForPatient(appointmentId);
+      // Rafraîchir les données
+      await fetchPatientData();
+      alert('Rendez-vous supprimé avec succès de votre liste');
+    } catch (error) {
+      console.error('Erreur lors de la suppression du rendez-vous:', error);
+      alert(error.message || 'Erreur lors de la suppression du rendez-vous');
+    }
   };
+
+  // Compte à rebours pour le prochain rendez-vous
+  useEffect(() => {
+    if (!nextAppointment) return;
+
+    const updateCountdown = () => {
+      const now = new Date();
+      const appointmentDate = new Date(nextAppointment.appointment_date);
+      const diff = appointmentDate - now;
+
+      if (diff <= 0) {
+        setCountdown('Rendez-vous en cours ou passé');
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (days > 0) {
+        setCountdown(`Dans ${days} jour${days > 1 ? 's' : ''} et ${hours} heure${hours > 1 ? 's' : ''}`);
+      } else if (hours > 0) {
+        setCountdown(`Dans ${hours} heure${hours > 1 ? 's' : ''} et ${minutes} minute${minutes > 1 ? 's' : ''}`);
+      } else {
+        setCountdown(`Dans ${minutes} minute${minutes > 1 ? 's' : ''}`);
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 60000); // Mise à jour chaque minute
+
+    return () => clearInterval(interval);
+  }, [nextAppointment]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -348,20 +362,6 @@ const PatientDashboard = () => {
     if (profile?.phone) score += 5;
 
     return Math.min(score, 100); // Maximum 100
-  };
-
-  // Obtenir la couleur du score de santé
-  const getHealthScoreColor = (score) => {
-    if (score >= 80) return '#27ae60';
-    if (score >= 60) return '#f39c12';
-    return '#e74c3c';
-  };
-
-  // Obtenir le message du score de santé
-  const getHealthScoreMessage = (score) => {
-    if (score >= 80) return 'Excellent suivi médical ! 🎉';
-    if (score >= 60) return 'Bon suivi, continuez ! 👍';
-    return 'Pensez à prendre rendez-vous régulièrement 📅';
   };
 
   if (loading) {
@@ -622,12 +622,28 @@ const PatientDashboard = () => {
                     {getStatusLabel(apt.status)}
                   </span>
                 </div>
-                <button
-                  className="btn-small"
-                  onClick={() => navigate(`/appointments/${apt.id}`)}
-                >
-                  Détails
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    className="btn-small"
+                    onClick={() => navigate(`/appointments/${apt.id}`)}
+                  >
+                    Détails
+                  </button>
+                  {apt.status === 'cancelled' && (
+                    <button
+                      className="btn-small"
+                      onClick={() => handleHideAppointment(apt.id)}
+                      style={{
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none'
+                      }}
+                      title="Supprimer ce rendez-vous annulé de votre liste"
+                    >
+                      🗑️ Supprimer
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

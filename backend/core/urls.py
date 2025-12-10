@@ -13,6 +13,7 @@ router.register(r'services', views.ServiceViewSet, basename='service')
 router.register(r'appointments', views.AppointmentViewSet, basename='appointment')
 router.register(r'conversations', views.ConversationViewSet, basename='conversation')
 router.register(r'messages', views.MessageViewSet, basename='message')
+router.register(r'prescriptions', views.PrescriptionViewSet, basename='prescription')
 
 urlpatterns = [
     # Authentification

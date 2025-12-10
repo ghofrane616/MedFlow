@@ -42,6 +42,12 @@ class User(AbstractUser):
         null=True,
         verbose_name="Adresse"
     )
+    profile_picture = models.ImageField(
+        upload_to='profile_pictures/',
+        blank=True,
+        null=True,
+        verbose_name="Photo de profil"
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Date de création"
@@ -516,6 +522,21 @@ class Appointment(models.Model):
         default=False,
         verbose_name="Rappel envoyé"
     )
+    hidden_for_patient = models.BooleanField(
+        default=False,
+        verbose_name="Masqué pour le patient",
+        help_text="Si True, le rendez-vous est masqué pour le patient"
+    )
+    hidden_for_doctor = models.BooleanField(
+        default=False,
+        verbose_name="Masqué pour le médecin",
+        help_text="Si True, le rendez-vous est masqué pour le médecin"
+    )
+    hidden_for_receptionist = models.BooleanField(
+        default=False,
+        verbose_name="Masqué pour la réceptionniste",
+        help_text="Si True, le rendez-vous est masqué pour la réceptionniste"
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Date de création"
@@ -645,3 +666,128 @@ class Message(models.Model):
             models.Index(fields=['sender']),
             models.Index(fields=['is_read']),
         ]
+
+
+class Prescription(models.Model):
+    """
+    Modèle pour les ordonnances médicales
+    """
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('completed', 'Terminée'),
+        ('cancelled', 'Annulée'),
+    ]
+
+    patient = models.ForeignKey(
+        'Patient',
+        on_delete=models.CASCADE,
+        related_name='prescriptions',
+        verbose_name="Patient"
+    )
+    doctor = models.ForeignKey(
+        'Doctor',
+        on_delete=models.CASCADE,
+        related_name='prescriptions',
+        verbose_name="Médecin"
+    )
+    appointment = models.ForeignKey(
+        'Appointment',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='prescriptions',
+        verbose_name="Rendez-vous"
+    )
+    diagnosis = models.TextField(
+        verbose_name="Diagnostic"
+    )
+    notes = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Notes et recommandations"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='active',
+        verbose_name="Statut"
+    )
+    is_viewed_by_patient = models.BooleanField(
+        default=False,
+        verbose_name="Vue par le patient"
+    )
+    is_picked_up = models.BooleanField(
+        default=False,
+        verbose_name="Récupérée en pharmacie"
+    )
+    picked_up_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Date de récupération"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Date de création"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Date de modification"
+    )
+
+    def __str__(self):
+        return f"Ordonnance pour {self.patient.user.get_full_name()} - {self.created_at.strftime('%d/%m/%Y')}"
+
+    class Meta:
+        verbose_name = "Ordonnance"
+        verbose_name_plural = "Ordonnances"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['patient', '-created_at']),
+            models.Index(fields=['doctor', '-created_at']),
+            models.Index(fields=['status']),
+        ]
+
+
+class PrescriptionMedication(models.Model):
+    """
+    Modèle pour les médicaments d'une ordonnance
+    """
+    prescription = models.ForeignKey(
+        'Prescription',
+        on_delete=models.CASCADE,
+        related_name='medications',
+        verbose_name="Ordonnance"
+    )
+    medication_name = models.CharField(
+        max_length=200,
+        verbose_name="Nom du médicament"
+    )
+    dosage = models.CharField(
+        max_length=100,
+        verbose_name="Dosage"
+    )
+    frequency = models.CharField(
+        max_length=200,
+        verbose_name="Fréquence"
+    )
+    duration = models.CharField(
+        max_length=100,
+        verbose_name="Durée du traitement"
+    )
+    instructions = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Instructions spéciales"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Date de création"
+    )
+
+    def __str__(self):
+        return f"{self.medication_name} - {self.dosage}"
+
+    class Meta:
+        verbose_name = "Médicament"
+        verbose_name_plural = "Médicaments"
+        ordering = ['id']

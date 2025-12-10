@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMyAppointments } from '../../api/appointments';
 import { Bar } from 'react-chartjs-2';
@@ -17,7 +17,6 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
-  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     todayTotal: 0,
@@ -29,18 +28,12 @@ const DoctorDashboard = () => {
   });
   const [todayAppointments, setTodayAppointments] = useState([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
-  const [recentPatients, setRecentPatients] = useState([]);
   const [monthlyStats, setMonthlyStats] = useState([]);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const appointmentsData = await getMyAppointments();
-      setAppointments(appointmentsData);
 
       calculateStats(appointmentsData);
 
@@ -49,10 +42,12 @@ const DoctorDashboard = () => {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const todayApts = appointmentsData.filter(apt => {
-        const aptDate = new Date(apt.appointment_date);
-        return aptDate >= today && aptDate < tomorrow;
-      });
+      const todayApts = appointmentsData
+        .filter(apt => {
+          const aptDate = new Date(apt.appointment_date);
+          return aptDate >= today && aptDate < tomorrow;
+        })
+        .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
       setTodayAppointments(todayApts);
 
       const nextWeek = new Date(today);
@@ -66,27 +61,17 @@ const DoctorDashboard = () => {
         .slice(0, 5);
       setUpcomingAppointments(upcomingApts);
 
-      const completedApts = appointmentsData
-        .filter(apt => apt.status === 'completed')
-        .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date))
-        .slice(0, 5);
-
-      const patients = completedApts.map(apt => ({
-        id: apt.patient_id,
-        name: apt.patient_name,
-        lastVisit: apt.appointment_date,
-        service: apt.service_name,
-        reason: apt.reason
-      }));
-      setRecentPatients(patients);
-
       calculateMonthlyStats(appointmentsData);
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const calculateStats = (appointmentsData) => {
     const today = new Date();
@@ -115,10 +100,12 @@ const DoctorDashboard = () => {
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    const monthCompleted = appointmentsData.filter(apt => {
+    // Tous les rendez-vous du mois (sauf annulés et absents)
+    const monthApts = appointmentsData.filter(apt => {
       const aptDate = new Date(apt.appointment_date);
-      return aptDate >= monthStart && aptDate <= monthEnd && apt.status === 'completed';
-    }).length;
+      return aptDate >= monthStart && aptDate <= monthEnd &&
+             apt.status !== 'cancelled' && apt.status !== 'no_show';
+    });
 
     const uniquePatients = new Set(appointmentsData.map(apt => apt.patient_id));
 
@@ -128,7 +115,7 @@ const DoctorDashboard = () => {
       todayPending,
       totalPatients: uniquePatients.size,
       weekTotal: weekApts.length,
-      monthCompleted
+      monthCompleted: monthApts.length  // Total du mois (tous les rendez-vous actifs)
     });
   };
 
@@ -160,14 +147,6 @@ const DoctorDashboard = () => {
     setMonthlyStats(months);
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
-
   const formatTime = (dateString) => {
     return new Date(dateString).toLocaleTimeString('fr-FR', {
       hour: '2-digit',
@@ -187,16 +166,6 @@ const DoctorDashboard = () => {
     return <span className={`status-badge ${statusInfo.class}`}>{statusInfo.label}</span>;
   };
 
-  const getTimelinePosition = (dateString) => {
-    const date = new Date(dateString);
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const totalMinutes = (hours - 8) * 60 + minutes; // 8h = début
-    const maxMinutes = 10 * 60; // 10 heures (8h-18h)
-    const percentage = (totalMinutes / maxMinutes) * 100;
-    return Math.max(0, Math.min(100, percentage));
-  };
-
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -210,7 +179,7 @@ const DoctorDashboard = () => {
       {/* Header */}
       <div className="dashboard-header">
         <h1>👨‍⚕️ Tableau de Bord Médecin</h1>
-        <p className="dashboard-subtitle">Bienvenue ! Voici un aperçu de votre activité</p>
+        <p className="dashboard-subtitle"></p>
       </div>
 
       {/* Statistiques KPI */}
@@ -265,7 +234,7 @@ const DoctorDashboard = () => {
           <div className="stat-content">
             <h3>Ce Mois</h3>
             <div className="stat-number">{stats.monthCompleted}</div>
-            <p className="stat-label">Complétés</p>
+            <p className="stat-label">Rendez-vous</p>
           </div>
         </div>
       </div>
@@ -278,51 +247,52 @@ const DoctorDashboard = () => {
         </div>
 
         {todayAppointments.length > 0 ? (
-          <div className="timeline-container">
-            <div className="timeline-hours">
-              <div className="timeline-hour">8h</div>
-              <div className="timeline-hour">9h</div>
-              <div className="timeline-hour">10h</div>
-              <div className="timeline-hour">11h</div>
-              <div className="timeline-hour">12h</div>
-              <div className="timeline-hour">13h</div>
-              <div className="timeline-hour">14h</div>
-              <div className="timeline-hour">15h</div>
-              <div className="timeline-hour">16h</div>
-              <div className="timeline-hour">17h</div>
-              <div className="timeline-hour">18h</div>
-            </div>
-            <div className="timeline-appointments">
-              {todayAppointments.map((apt) => (
-                <div
-                  key={apt.id}
-                  className="timeline-appointment"
-                  style={{ left: `${getTimelinePosition(apt.appointment_date)}%` }}
-                >
-                  <div className="appointment-card-timeline">
-                    <div className="appointment-time-badge">
-                      {formatTime(apt.appointment_date)}
+          <div className="today-appointments-carousel">
+            {todayAppointments.map((apt, index) => (
+              <div key={apt.id} className="appointment-card-today" style={{ animationDelay: `${index * 0.1}s` }}>
+                <div className="appointment-card-header">
+                  <div className="appointment-time-large">
+                    <div className="time-icon">🕐</div>
+                    <div className="time-text">{formatTime(apt.appointment_date)}</div>
+                  </div>
+                  {getStatusBadge(apt.status)}
+                </div>
+
+                <div className="appointment-card-body">
+                  <div className="patient-info-today">
+                    <div className="patient-avatar-large">
+                      {apt.patient_name?.charAt(0) || 'P'}
                     </div>
-                    {getStatusBadge(apt.status)}
-                    <div className="appointment-patient-name">
-                      <strong>{apt.patient_name}</strong>
+                    <div className="patient-details">
+                      <h3 className="patient-name-large">{apt.patient_name}</h3>
+                      <p className="patient-id">ID: #{apt.patient_id}</p>
                     </div>
-                    <div className="appointment-details">
-                      <span className="appointment-service">🏥 {apt.service_name}</span>
-                      {apt.reason && (
-                        <p className="appointment-reason">📋 {apt.reason}</p>
-                      )}
+                  </div>
+
+                  <div className="appointment-info-today">
+                    <div className="info-row">
+                      <span className="info-icon">🏥</span>
+                      <span className="info-text">{apt.service_name}</span>
                     </div>
-                    <button
-                      className="btn-view"
-                      onClick={() => navigate(`/appointments/${apt.id}`)}
-                    >
-                      👁️ Voir
-                    </button>
+                    {apt.reason && (
+                      <div className="info-row">
+                        <span className="info-icon">📋</span>
+                        <span className="info-text">{apt.reason}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="appointment-card-footer">
+                  <button
+                    className="btn-view-today"
+                    onClick={() => navigate(`/appointments/${apt.id}`)}
+                  >
+                    <span>👁️ Voir Détails</span>
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="no-data">
@@ -373,33 +343,6 @@ const DoctorDashboard = () => {
           </div>
         ) : (
           <p className="no-data">Aucun rendez-vous à venir dans les 7 prochains jours</p>
-        )}
-      </div>
-
-      {/* Patients Récents */}
-      <div className="section">
-        <div className="section-header">
-          <h2>👥 Patients Récents</h2>
-          <button className="btn-link" onClick={() => navigate('/patients')}>Voir tous →</button>
-        </div>
-
-        {recentPatients.length > 0 ? (
-          <div className="patients-grid">
-            {recentPatients.map((patient) => (
-              <div key={patient.id} className="patient-card-modern">
-                <div className="patient-avatar">{patient.name?.charAt(0) || 'P'}</div>
-                <div className="patient-info-main">
-                  <h4>{patient.name}</h4>
-                  <p className="patient-last-visit">Dernière visite: {formatDate(patient.lastVisit)}</p>
-                  <p className="patient-service"><span className="service-badge">{patient.service}</span></p>
-                  {patient.reason && <p className="patient-reason">Motif: {patient.reason}</p>}
-                </div>
-                <button className="btn-small btn-outline" onClick={() => navigate(`/patients/${patient.id}`)}>📋 Dossier</button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="no-data">Aucun patient récent</p>
         )}
       </div>
 

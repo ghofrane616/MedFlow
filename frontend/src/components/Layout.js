@@ -57,9 +57,10 @@ const Layout = ({ children }) => {
     }
   };
 
-  // Charger les messages non lus au montage et toutes les 30 secondes
+  // Charger les données du profil et les messages non lus au montage
   useEffect(() => {
     if (user) {
+      fetchProfileData(); // Charger la photo de profil
       fetchUnreadMessagesCount();
       const interval = setInterval(fetchUnreadMessagesCount, 30000); // Rafraîchir toutes les 30 secondes
       return () => clearInterval(interval);
@@ -111,19 +112,21 @@ const Layout = ({ children }) => {
       case 'doctor':
         return [
           ...baseLinks,
-          { label: 'Ordonnances', path: '/doctor/prescriptions', icon: FiFileText },
+          { label: 'Rendez-vous', path: '/appointments', icon: FiCalendar },
+          { label: 'Ordonnances', path: '/prescriptions', icon: FiFileText },
+          { label: 'Patients', path: '/patients', icon: FiUsers },
         ];
       case 'receptionist':
         return [
           ...baseLinks,
-          { label: 'Facturation', path: '/receptionist/billing', icon: FiFileText },
+          { label: 'Rendez-vous', path: '/appointments', icon: FiCalendar },
+          { label: 'Patients', path: '/receptionist/patients-list', icon: FiUsers },
         ];
       case 'patient':
         return [
           ...baseLinks,
           { label: 'Mes Rendez-vous', path: '/appointments', icon: FiCalendar },
-          { label: 'Mes Ordonnances', path: '/patient/prescriptions', icon: FiFileText },
-          { label: 'Mon Profil', path: '/patient/profile', icon: FiUsers },
+          { label: 'Mes Ordonnances', path: '/prescriptions', icon: FiFileText },
         ];
       default:
         return baseLinks;
@@ -162,13 +165,27 @@ const Layout = ({ children }) => {
               <div className="user-info">
                 <span className="user-name">{user.first_name || user.username}</span>
                 <span className="user-type">({user.user_type})</span>
-                <button
-                  className="profile-btn"
-                  onClick={handleOpenProfile}
+
+                {/* Photo de profil */}
+                <div
+                  className="profile-picture-container"
+                  onClick={() => navigate('/profile')}
                   title="Mon Profil"
+                  style={{ cursor: 'pointer' }}
                 >
-                  <FiUser size={28} />
-                </button>
+                  {profileData?.profile_picture_url ? (
+                    <img
+                      src={profileData.profile_picture_url}
+                      alt="Profil"
+                      className="header-profile-picture"
+                    />
+                  ) : (
+                    <div className="header-profile-placeholder">
+                      <FiUser size={24} />
+                    </div>
+                  )}
+                </div>
+
                 <button
                   className="logout-btn"
                   onClick={handleLogout}

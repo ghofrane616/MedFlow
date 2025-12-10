@@ -32,13 +32,24 @@ import AppointmentEdit from './pages/appointments/AppointmentEdit';
 import AppointmentDetail from './pages/appointments/AppointmentDetail';
 
 // Patients
+import PatientsPage from './pages/patients/index';
 import PatientNew from './pages/patients/PatientNew';
+import PatientDetail from './pages/patients/PatientDetail';
+import PatientEdit from './pages/patients/PatientEdit';
 
 // Messagerie
 import MessagingPage from './pages/messaging/index';
 import ConversationDetail from './pages/messaging/ConversationDetail';
 import NewConversation from './pages/messaging/NewConversation';
 
+// Profil
+import MyProfile from './pages/profile/MyProfile';
+
+// Ordonnances
+import PrescriptionsRouter from './pages/prescriptions/PrescriptionsRouter';
+import CreatePrescription from './pages/prescriptions/CreatePrescription';
+import EditPrescription from './pages/prescriptions/EditPrescription';
+import PrescriptionDetail from './pages/prescriptions/PrescriptionDetail';
 
 // Composants
 import Layout from './components/Layout';
@@ -321,11 +332,44 @@ function App() {
 
         {/* Routes Patients */}
         <Route
+          path="/patients"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PatientsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/patients/new"
           element={
             <ProtectedRoute>
               <Layout>
                 <PatientNew />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/patients/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PatientDetail />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/patients/:id/edit"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PatientEdit />
               </Layout>
             </ProtectedRoute>
           }
@@ -371,6 +415,60 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <ConversationDetail />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Profil */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <MyProfile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Ordonnances */}
+        <Route
+          path="/prescriptions"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PrescriptionsRouter />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/prescriptions/create"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CreatePrescription />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/prescriptions/:id/edit"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <EditPrescription />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/prescriptions/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PrescriptionDetail />
               </Layout>
             </ProtectedRoute>
           }

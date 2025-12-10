@@ -8,13 +8,17 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.contrib.auth import logout
 from django.utils import timezone
-from .models import User, Clinic, Patient, Doctor, Receptionist, Service, Appointment, Message, Conversation
+from .models import (
+    User, Clinic, Patient, Doctor, Receptionist, Service,
+    Appointment, Message, Conversation, Prescription, PrescriptionMedication
+)
 from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer,
     ClinicSerializer, PatientSerializer, PatientCreateUpdateSerializer,
     DoctorSerializer, ReceptionistSerializer, ServiceSerializer,
     AppointmentSerializer, AppointmentCreateUpdateSerializer,
-    MessageSerializer, ConversationSerializer, ConversationCreateUpdateSerializer
+    MessageSerializer, ConversationSerializer, ConversationCreateUpdateSerializer,
+    PrescriptionSerializer, PrescriptionCreateSerializer, PrescriptionMedicationSerializer
 )
 
 # Create your views here.
@@ -114,6 +118,15 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        """Permet de mettre à jour le profil, y compris la photo"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
 
 # Vues pour les modèles principaux
@@ -368,13 +381,16 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         try:
             if user.user_type == 'doctor':
                 doctor = Doctor.objects.get(user=user)
-                return Appointment.objects.filter(doctor=doctor)
+                # Exclure les rendez-vous masqués pour le médecin
+                return Appointment.objects.filter(doctor=doctor, hidden_for_doctor=False)
             elif user.user_type == 'receptionist':
                 receptionist = Receptionist.objects.get(user=user)
-                return Appointment.objects.filter(clinic=receptionist.clinic)
+                # Exclure les rendez-vous masqués pour la réceptionniste
+                return Appointment.objects.filter(clinic=receptionist.clinic, hidden_for_receptionist=False)
             elif user.user_type == 'patient':
                 patient = Patient.objects.get(user=user)
-                return Appointment.objects.filter(patient=patient)
+                # Exclure les rendez-vous masqués pour le patient
+                return Appointment.objects.filter(patient=patient, hidden_for_patient=False)
         except (Doctor.DoesNotExist, Receptionist.DoesNotExist, Patient.DoesNotExist):
             return Appointment.objects.none()
 
@@ -387,10 +403,12 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         try:
             if user.user_type == 'patient':
                 patient = Patient.objects.get(user=user)
-                appointments = Appointment.objects.filter(patient=patient)
+                # Exclure les rendez-vous masqués pour le patient
+                appointments = Appointment.objects.filter(patient=patient, hidden_for_patient=False)
             elif user.user_type == 'doctor':
                 doctor = Doctor.objects.get(user=user)
-                appointments = Appointment.objects.filter(doctor=doctor)
+                # Exclure les rendez-vous masqués pour le médecin
+                appointments = Appointment.objects.filter(doctor=doctor, hidden_for_doctor=False)
             else:
                 appointments = Appointment.objects.none()
         except (Patient.DoesNotExist, Doctor.DoesNotExist):
@@ -437,6 +455,109 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         appointment.save()
         serializer = self.get_serializer(appointment)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['patch'])
+    def hide_for_patient(self, request, pk=None):
+        """Masquer un rendez-vous annulé pour le patient (soft delete)"""
+        appointment = self.get_object()
+
+        # Vérifier que c'est bien un patient
+        if request.user.user_type != 'patient':
+            return Response(
+                {'error': 'Seuls les patients peuvent masquer leurs rendez-vous'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Vérifier que c'est bien son rendez-vous
+        if appointment.patient.user != request.user:
+            return Response(
+                {'error': 'Vous n\'avez pas la permission de masquer ce rendez-vous'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Vérifier que le rendez-vous est annulé
+        if appointment.status != 'cancelled':
+            return Response(
+                {'error': 'Seuls les rendez-vous annulés peuvent être masqués'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Masquer le rendez-vous pour le patient
+        appointment.hidden_for_patient = True
+        appointment.save()
+
+        return Response({
+            'message': 'Rendez-vous masqué avec succès',
+            'id': appointment.id
+        })
+
+    def destroy(self, request, *args, **kwargs):
+        """Masquer un rendez-vous annulé selon le rôle (soft delete)"""
+        appointment = self.get_object()
+
+        # Vérifier que le rendez-vous est annulé
+        if appointment.status != 'cancelled':
+            return Response(
+                {'error': 'Seuls les rendez-vous annulés peuvent être supprimés'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Masquer selon le rôle de l'utilisateur
+        user = request.user
+
+        if user.user_type == 'patient':
+            # Vérifier que c'est bien son rendez-vous
+            if appointment.patient.user != user:
+                return Response(
+                    {'error': 'Vous n\'avez pas la permission de supprimer ce rendez-vous'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            appointment.hidden_for_patient = True
+
+        elif user.user_type == 'doctor':
+            # Vérifier que c'est bien son rendez-vous
+            if appointment.doctor.user != user:
+                return Response(
+                    {'error': 'Vous n\'avez pas la permission de supprimer ce rendez-vous'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            appointment.hidden_for_doctor = True
+
+        elif user.user_type == 'receptionist':
+            # Vérifier que c'est un rendez-vous de sa clinique
+            try:
+                receptionist = Receptionist.objects.get(user=user)
+                if appointment.clinic != receptionist.clinic:
+                    return Response(
+                        {'error': 'Vous n\'avez pas la permission de supprimer ce rendez-vous'},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            except Receptionist.DoesNotExist:
+                return Response(
+                    {'error': 'Réceptionniste non trouvé'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            appointment.hidden_for_receptionist = True
+
+        elif user.user_type == 'admin':
+            # L'admin peut supprimer définitivement
+            appointment.delete()
+            return Response(
+                {'message': 'Rendez-vous supprimé définitivement avec succès'},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        else:
+            return Response(
+                {'error': 'Vous n\'avez pas la permission de supprimer un rendez-vous'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        appointment.save()
+
+        return Response(
+            {'message': 'Rendez-vous masqué avec succès'},
+            status=status.HTTP_204_NO_CONTENT
+        )
 
     @action(detail=False, methods=['get'])
     def available_slots(self, request):
@@ -1524,3 +1645,160 @@ class MessageViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_403_FORBIDDEN)
 
         return super().destroy(request, *args, **kwargs)
+
+
+# ============================================
+# VUES POUR LES ORDONNANCES
+# ============================================
+
+class PrescriptionViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour gérer les ordonnances
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return PrescriptionCreateSerializer
+        return PrescriptionSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # Admin voit toutes les ordonnances
+        if user.user_type == 'admin':
+            return Prescription.objects.all().select_related(
+                'patient__user', 'doctor__user', 'appointment'
+            ).prefetch_related('medications')
+
+        # Médecin voit ses ordonnances
+        elif user.user_type == 'doctor':
+            try:
+                doctor = user.doctor_profile
+                return Prescription.objects.filter(
+                    doctor=doctor
+                ).select_related(
+                    'patient__user', 'doctor__user', 'appointment'
+                ).prefetch_related('medications')
+            except Doctor.DoesNotExist:
+                return Prescription.objects.none()
+
+        # Patient voit ses ordonnances
+        elif user.user_type == 'patient':
+            try:
+                patient = user.patient_profile
+                return Prescription.objects.filter(
+                    patient=patient
+                ).select_related(
+                    'patient__user', 'doctor__user', 'appointment'
+                ).prefetch_related('medications')
+            except Patient.DoesNotExist:
+                return Prescription.objects.none()
+
+        # Réceptionniste voit les ordonnances de sa clinique
+        elif user.user_type == 'receptionist':
+            try:
+                receptionist = user.receptionist_profile
+                return Prescription.objects.filter(
+                    patient__clinic=receptionist.clinic
+                ).select_related(
+                    'patient__user', 'doctor__user', 'appointment'
+                ).prefetch_related('medications')
+            except Receptionist.DoesNotExist:
+                return Prescription.objects.none()
+
+        return Prescription.objects.none()
+
+    def create(self, request, *args, **kwargs):
+        """Seuls les médecins peuvent créer des ordonnances"""
+        if request.user.user_type != 'doctor':
+            return Response({
+                'error': 'Seuls les médecins peuvent créer des ordonnances'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        # Vérifier que le médecin crée l'ordonnance pour lui-même
+        try:
+            doctor = request.user.doctor_profile
+            request.data['doctor'] = doctor.id
+        except Doctor.DoesNotExist:
+            return Response({
+                'error': 'Profil médecin non trouvé'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        """Seuls les médecins peuvent modifier leurs ordonnances non vues"""
+        prescription = self.get_object()
+
+        if request.user.user_type != 'doctor':
+            return Response({
+                'error': 'Seuls les médecins peuvent modifier des ordonnances'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        if prescription.doctor.user != request.user:
+            return Response({
+                'error': 'Vous ne pouvez modifier que vos propres ordonnances'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        if prescription.is_viewed_by_patient:
+            return Response({
+                'error': 'Impossible de modifier une ordonnance déjà vue par le patient'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """Seuls les médecins peuvent supprimer leurs ordonnances non vues"""
+        prescription = self.get_object()
+
+        if request.user.user_type != 'doctor':
+            return Response({
+                'error': 'Seuls les médecins peuvent supprimer des ordonnances'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        if prescription.doctor.user != request.user:
+            return Response({
+                'error': 'Vous ne pouvez supprimer que vos propres ordonnances'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        if prescription.is_viewed_by_patient:
+            return Response({
+                'error': 'Impossible de supprimer une ordonnance déjà vue par le patient'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return super().destroy(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        """Marquer comme vue si c'est un patient qui consulte"""
+        response = super().retrieve(request, *args, **kwargs)
+
+        if request.user.user_type == 'patient':
+            prescription = self.get_object()
+            if not prescription.is_viewed_by_patient:
+                prescription.is_viewed_by_patient = True
+                prescription.save()
+
+        return response
+
+    @action(detail=True, methods=['post'])
+    def mark_picked_up(self, request, pk=None):
+        """Marquer une ordonnance comme récupérée en pharmacie"""
+        prescription = self.get_object()
+
+        if request.user.user_type != 'patient':
+            return Response({
+                'error': 'Seuls les patients peuvent marquer une ordonnance comme récupérée'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        if prescription.patient.user != request.user:
+            return Response({
+                'error': 'Vous ne pouvez marquer que vos propres ordonnances'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        prescription.is_picked_up = True
+        prescription.picked_up_date = timezone.now()
+        prescription.save()
+
+        serializer = self.get_serializer(prescription)
+        return Response(serializer.data)

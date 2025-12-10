@@ -223,6 +223,29 @@ export const cancelAppointment = async (id) => {
   }
 };
 
+export const hideAppointmentForPatient = async (id) => {
+  const token = getAccessToken();
+  try {
+    const response = await fetch(`${API_URL}/appointments/${id}/hide_for_patient/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Erreur: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur lors de la suppression du rendez-vous:', error);
+    throw error;
+  }
+};
+
 export const getAvailableSlots = async (doctorId, date, serviceId = null) => {
   const token = getAccessToken();
   try {

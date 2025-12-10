@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
-from .models import User, Clinic, Patient, Doctor, Receptionist, Service, Appointment, Message, Conversation
+from .models import (
+    User, Clinic, Patient, Doctor, Receptionist, Service,
+    Appointment, Message, Conversation, Prescription, PrescriptionMedication
+)
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -162,15 +165,25 @@ class UserProfileSerializer(serializers.ModelSerializer):
     receptionist_profile = serializers.SerializerMethodField()
     patient_profile = serializers.SerializerMethodField()
     doctor_profile = serializers.SerializerMethodField()
+    profile_picture_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
-            'user_type', 'phone_number', 'date_of_birth', 'address',
+            'user_type', 'phone_number', 'date_of_birth', 'address', 'profile_picture', 'profile_picture_url',
             'date_joined', 'last_login', 'is_active', 'receptionist_profile', 'patient_profile', 'doctor_profile'
         ]
         read_only_fields = ['id', 'username', 'user_type', 'date_joined', 'last_login', 'is_active']
+
+    def get_profile_picture_url(self, obj):
+        """Retourne l'URL complète de la photo de profil"""
+        if obj.profile_picture:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.profile_picture.url)
+            return obj.profile_picture.url
+        return None
 
     def get_receptionist_profile(self, obj):
         """Récupère le profil de réceptionniste si disponible"""
@@ -404,24 +417,42 @@ class AppointmentCreateUpdateSerializer(serializers.ModelSerializer):
         # Calculer l'heure de fin du rendez-vous
         appointment_end = appointment_date + timedelta(minutes=appointment_duration)
 
-        # Vérifier qu'il n'y a pas de conflit avec les rendez-vous existants
+        # Vérifier qu'il n'y a pas de conflit avec les rendez-vous existants du MÉDECIN
         # Un conflit existe si :
         # 1. Le nouveau rendez-vous commence avant la fin d'un rendez-vous existant
         # 2. Le nouveau rendez-vous finit après le début d'un rendez-vous existant
-        existing = Appointment.objects.filter(
+        existing_doctor = Appointment.objects.filter(
             doctor=doctor,
             status__in=['scheduled', 'confirmed', 'in_progress']
         ).exclude(id=self.instance.id if self.instance else None)
 
-        for apt in existing:
+        # Vérifier qu'il n'y a pas de conflit avec les rendez-vous existants du PATIENT
+        existing_patient = Appointment.objects.filter(
+            patient=patient,
+            status__in=['scheduled', 'confirmed', 'in_progress']
+        ).exclude(id=self.instance.id if self.instance else None)
+
+        # Vérifier les conflits avec les rendez-vous du médecin
+        for apt in existing_doctor:
             apt_end = apt.appointment_date + timedelta(minutes=apt.duration)
 
             # Vérifier le chevauchement
             if appointment_date < apt_end and appointment_end > apt.appointment_date:
-                raise serializers.ValidationError(
-                    f"Le médecin a déjà un rendez-vous de {apt.appointment_date.strftime('%H:%M')} "
-                    f"à {apt_end.strftime('%H:%M')}. Veuillez choisir un autre créneau."
-                )
+                patient_name = apt.patient.user.get_full_name() if apt.patient else "un patient"
+                raise serializers.ValidationError({
+                    'appointment_date': f"❌ CONFLIT DE RENDEZ-VOUS : Le Dr. {doctor.user.get_full_name()} a déjà un rendez-vous avec {patient_name} de {apt.appointment_date.strftime('%H:%M')} à {apt_end.strftime('%H:%M')} ({apt.duration} minutes). Votre rendez-vous ({appointment_duration} minutes) se termine à {appointment_end.strftime('%H:%M')}. Veuillez choisir un autre créneau."
+                })
+
+        # Vérifier les conflits avec les rendez-vous du patient
+        for apt in existing_patient:
+            apt_end = apt.appointment_date + timedelta(minutes=apt.duration)
+
+            # Vérifier le chevauchement
+            if appointment_date < apt_end and appointment_end > apt.appointment_date:
+                doctor_name = apt.doctor.user.get_full_name() if apt.doctor else "un médecin"
+                raise serializers.ValidationError({
+                    'appointment_date': f"❌ CONFLIT DE RENDEZ-VOUS : Le patient {patient.user.get_full_name()} a déjà un rendez-vous avec le Dr. {doctor_name} de {apt.appointment_date.strftime('%H:%M')} à {apt_end.strftime('%H:%M')} ({apt.duration} minutes). Veuillez choisir un autre créneau."
+                })
 
         return attrs
 
@@ -537,3 +568,95 @@ class ConversationCreateUpdateSerializer(serializers.ModelSerializer):
             )
 
         return attrs
+
+
+# ============================================
+# SERIALIZERS POUR LES ORDONNANCES
+# ============================================
+
+class PrescriptionMedicationSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour les médicaments d'une ordonnance
+    """
+    class Meta:
+        model = PrescriptionMedication
+        fields = [
+            'id', 'medication_name', 'dosage', 'frequency',
+            'duration', 'instructions', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']
+
+
+class PrescriptionSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour les ordonnances
+    """
+    medications = PrescriptionMedicationSerializer(many=True, read_only=True)
+    patient_name = serializers.CharField(source='patient.user.get_full_name', read_only=True)
+    patient_email = serializers.CharField(source='patient.user.email', read_only=True)
+    patient_phone = serializers.CharField(source='patient.user.phone_number', read_only=True)
+    patient_date_of_birth = serializers.DateField(source='patient.user.date_of_birth', read_only=True)
+    doctor_name = serializers.CharField(source='doctor.user.get_full_name', read_only=True)
+    doctor_specialization = serializers.CharField(source='doctor.specialization', read_only=True)
+    doctor_phone = serializers.CharField(source='doctor.user.phone_number', read_only=True)
+    appointment_date = serializers.DateTimeField(source='appointment.appointment_date', read_only=True)
+
+    class Meta:
+        model = Prescription
+        fields = [
+            'id', 'patient', 'patient_name', 'patient_email', 'patient_phone', 'patient_date_of_birth',
+            'doctor', 'doctor_name', 'doctor_specialization', 'doctor_phone',
+            'appointment', 'appointment_date', 'diagnosis', 'notes', 'status',
+            'is_viewed_by_patient', 'is_picked_up', 'picked_up_date',
+            'created_at', 'updated_at', 'medications'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'is_viewed_by_patient']
+
+
+class PrescriptionCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour créer une ordonnance avec ses médicaments
+    """
+    medications = PrescriptionMedicationSerializer(many=True)
+
+    class Meta:
+        model = Prescription
+        fields = [
+            'patient', 'doctor', 'appointment', 'diagnosis',
+            'notes', 'status', 'medications'
+        ]
+
+    def create(self, validated_data):
+        medications_data = validated_data.pop('medications')
+        prescription = Prescription.objects.create(**validated_data)
+
+        # Créer les médicaments
+        for medication_data in medications_data:
+            PrescriptionMedication.objects.create(
+                prescription=prescription,
+                **medication_data
+            )
+
+        return prescription
+
+    def update(self, instance, validated_data):
+        medications_data = validated_data.pop('medications', None)
+
+        # Mettre à jour l'ordonnance
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Mettre à jour les médicaments si fournis
+        if medications_data is not None:
+            # Supprimer les anciens médicaments
+            instance.medications.all().delete()
+
+            # Créer les nouveaux médicaments
+            for medication_data in medications_data:
+                PrescriptionMedication.objects.create(
+                    prescription=instance,
+                    **medication_data
+                )
+
+        return instance

@@ -14,7 +14,6 @@ export default function AppointmentNew() {
   const [patients, setPatients] = useState([]);
   const [clinics, setClinics] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -26,7 +25,6 @@ export default function AppointmentNew() {
   const loadData = async () => {
     try {
       setLoading(true);
-      setError(null);
 
       const token = getAccessToken();
       const API_URL = 'http://localhost:8000/api';
@@ -80,8 +78,7 @@ export default function AppointmentNew() {
         setClinics([]);
       }
     } catch (err) {
-      setError('Erreur lors du chargement des données');
-      console.error(err);
+      console.error('Erreur lors du chargement des données:', err);
     } finally {
       setLoading(false);
     }
@@ -90,14 +87,12 @@ export default function AppointmentNew() {
   const handleSubmit = async (formData) => {
     try {
       setLoading(true);
-      setError(null);
       setErrorMessage('');
 
       await createAppointment(formData);
       setShowSuccessModal(true);
     } catch (err) {
       const message = err.message || 'Erreur lors de la création du rendez-vous';
-      setError(message);
       setErrorMessage(message);
       setShowErrorModal(true);
       console.error(err);
@@ -142,7 +137,7 @@ export default function AppointmentNew() {
 
       <SuccessModal
         isOpen={showSuccessModal}
-        title="✓ Rendez-vous créé avec succès"
+        title=" Rendez-vous créé avec succès"
         message="Le rendez-vous a été créé et vous allez être redirigé vers la liste."
         onClose={handleSuccessModalClose}
         autoCloseDelay={2000}

@@ -51,7 +51,7 @@ export default function AppointmentDetail() {
       setAppointment(updated);
       setModalConfig({
         type: 'success',
-        title: '✓ Rendez-vous confirmé',
+        title: ' Rendez-vous confirmé',
         message: 'Le rendez-vous a été confirmé avec succès. Un rappel sera envoyé au patient.'
       });
       setShowModal(true);
@@ -85,7 +85,7 @@ export default function AppointmentDetail() {
       setAppointment(updated);
       setModalConfig({
         type: 'success',
-        title: '✓ Rendez-vous annulé',
+        title: 'Rendez-vous annulé',
         message: 'Le rendez-vous a été annulé. Un email de notification a été envoyé au patient.'
       });
       setShowModal(true);
@@ -242,7 +242,7 @@ export default function AppointmentDetail() {
         <div className="detail-actions">
           {user?.user_type === 'receptionist' && appointment.status === 'scheduled' && (
             <button className="btn btn-success" onClick={handleConfirm}>
-              ✓ Confirmer
+              Confirmer
             </button>
           )}
 

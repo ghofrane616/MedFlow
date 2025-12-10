@@ -150,7 +150,7 @@ export default function AppointmentEdit() {
 
       <SuccessModal
         isOpen={showSuccessModal}
-        title="✓ Rendez-vous modifié avec succès"
+        title="Rendez-vous modifié avec succès"
         message="Le rendez-vous a été modifié et vous allez être redirigé vers les détails."
         onClose={handleSuccessModalClose}
         autoCloseDelay={2000}

@@ -2,9 +2,9 @@
  * Page Créer une Nouvelle Conversation
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiPlus, FiX } from 'react-icons/fi';
+import { FiArrowLeft, FiX } from 'react-icons/fi';
 import { createConversation } from '../../api/messaging';
 import AlertModal from '../../components/AlertModal';
 import './NewConversation.css';
@@ -13,7 +13,6 @@ const NewConversation = () => {
   const navigate = useNavigate();
   const [subject, setSubject] = useState('');
   const [selectedRecipient, setSelectedRecipient] = useState(null);
-  const [availableUsers, setAvailableUsers] = useState([]);
   const [clinic, setClinic] = useState('');
   const [clinics, setClinics] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -25,11 +24,7 @@ const NewConversation = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = currentUser.user_type === 'admin';
 
-  useEffect(() => {
-    fetchClinicsAndUsers();
-  }, []);
-
-  const fetchClinicsAndUsers = async () => {
+  const fetchClinicsAndUsers = useCallback(async () => {
     try {
       const token = localStorage.getItem('access_token');
 
@@ -57,7 +52,6 @@ const NewConversation = () => {
 
       // Filtrer l'utilisateur actuel
       const filteredUsers = users.filter(u => u.id !== currentUser.id);
-      setAvailableUsers(filteredUsers);
 
       // Grouper les utilisateurs par rôle
       const grouped = {
@@ -81,7 +75,11 @@ const NewConversation = () => {
       });
       setShowModal(true);
     }
-  };
+  }, [isAdmin, currentUser.id]);
+
+  useEffect(() => {
+    fetchClinicsAndUsers();
+  }, [fetchClinicsAndUsers]);
 
   const handleRecipientSelect = (e) => {
     const userId = parseInt(e.target.value);
@@ -157,7 +155,7 @@ const NewConversation = () => {
 
       setModalConfig({
         type: 'success',
-        title: '✓ Conversation créée',
+        title: ' Conversation créée',
         message: 'La conversation a été créée avec succès'
       });
       setShowModal(true);

@@ -6,7 +6,8 @@ import {
   getAppointments,
   getMyAppointments,
   cancelAppointment,
-  deleteAppointment
+  deleteAppointment,
+  hideAppointmentForPatient
 } from '../../api/appointments';
 import '../../styles/Appointments.css';
 
@@ -31,7 +32,7 @@ export default function AppointmentsPage() {
 
   const canCreate = user?.user_type === 'patient' || user?.user_type === 'receptionist';
   const canEdit = user?.user_type === 'receptionist' || user?.user_type === 'doctor';
-  const canDelete = user?.user_type === 'receptionist' || user?.user_type === 'patient';
+  const canDelete = user?.user_type === 'receptionist' || user?.user_type === 'patient' || user?.user_type === 'doctor';
 
   useEffect(() => {
     loadAppointments();
@@ -71,10 +72,22 @@ export default function AppointmentsPage() {
   };
 
   const handleDeleteClick = (id) => {
+    let message = '';
+
+    if (user?.user_type === 'patient') {
+      message = 'Êtes-vous sûr de vouloir supprimer ce rendez-vous annulé de votre liste ? Il restera visible pour le médecin et la réceptionniste.';
+    } else if (user?.user_type === 'doctor') {
+      message = 'Êtes-vous sûr de vouloir supprimer ce rendez-vous annulé de votre liste ? Il restera visible pour le patient et la réceptionniste.';
+    } else if (user?.user_type === 'receptionist') {
+      message = 'Êtes-vous sûr de vouloir supprimer ce rendez-vous annulé de votre liste ? Il restera visible pour le patient et le médecin.';
+    } else {
+      message = 'Êtes-vous sûr de vouloir supprimer définitivement ce rendez-vous annulé ? Cette action est irréversible.';
+    }
+
     setModalConfig({
       type: 'confirm',
       title: '🗑️ Supprimer le rendez-vous ?',
-      message: 'Êtes-vous sûr de vouloir supprimer ce rendez-vous annulé ? Cette action est irréversible.'
+      message: message
     });
     setPendingDeleteId(id);
     setActionType('delete');
@@ -92,7 +105,7 @@ export default function AppointmentsPage() {
       );
       setModalConfig({
         type: 'success',
-        title: '✓ Rendez-vous annulé',
+        title: ' Rendez-vous annulé',
         message: 'Le rendez-vous a été annulé avec succès.'
       });
       setShowModal(true);
@@ -116,14 +129,31 @@ export default function AppointmentsPage() {
 
     try {
       setLoading(true);
-      await deleteAppointment(pendingDeleteId);
+
+      // Tous les rôles utilisent deleteAppointment qui fait un soft delete selon le rôle
+      // Sauf l'admin qui fait un hard delete
+      if (user?.user_type === 'patient') {
+        await hideAppointmentForPatient(pendingDeleteId);
+      } else {
+        // Pour doctor, receptionist, admin
+        await deleteAppointment(pendingDeleteId);
+      }
+
       setAppointments(
         appointments.filter((apt) => apt.id !== pendingDeleteId)
       );
+
+      let successMessage = '';
+      if (user?.user_type === 'admin') {
+        successMessage = 'Le rendez-vous a été supprimé définitivement avec succès.';
+      } else {
+        successMessage = 'Le rendez-vous a été supprimé de votre liste avec succès.';
+      }
+
       setModalConfig({
         type: 'success',
-        title: '✓ Rendez-vous supprimé',
-        message: 'Le rendez-vous a été supprimé avec succès.'
+        title: ' Rendez-vous supprimé',
+        message: successMessage
       });
       setShowModal(true);
       setPendingDeleteId(null);
@@ -132,7 +162,7 @@ export default function AppointmentsPage() {
       setModalConfig({
         type: 'error',
         title: '❌ Erreur',
-        message: 'Une erreur s\'est produite lors de l\'annulation du rendez-vous.'
+        message: err.message || 'Une erreur s\'est produite lors de la suppression du rendez-vous.'
       });
       setShowModal(true);
       console.error(err);
