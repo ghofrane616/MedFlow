@@ -8,6 +8,7 @@ import { FiArrowLeft, FiX } from 'react-icons/fi';
 import { createConversation } from '../../api/messaging';
 import AlertModal from '../../components/AlertModal';
 import './NewConversation.css';
+import { API_URL } from '../../config';
 
 const NewConversation = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ const NewConversation = () => {
 
       // Récupérer les cliniques (seulement pour les admins)
       if (isAdmin) {
-        const clinicsRes = await fetch('http://localhost:8000/api/clinics/', {
+        const clinicsRes = await fetch(`${API_URL}/clinics/`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const clinicsData = await clinicsRes.json();
@@ -38,7 +39,7 @@ const NewConversation = () => {
       }
 
       // Récupérer les utilisateurs de la clinique (nouvel endpoint sécurisé)
-      const usersRes = await fetch('http://localhost:8000/api/clinic-users/', {
+      const usersRes = await fetch(`${API_URL}/clinic-users/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

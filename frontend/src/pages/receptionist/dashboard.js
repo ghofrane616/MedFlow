@@ -11,6 +11,7 @@ import {
   Legend
 } from 'chart.js';
 import '../../styles/Dashboard.css';
+import { API_URL } from '../../config';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -41,12 +42,12 @@ const ReceptionistDashboard = () => {
       const token = localStorage.getItem('access_token');
 
       // Récupérer les rendez-vous
-      const appointmentsResponse = await fetch('http://localhost:8000/api/appointments/', {
+      const appointmentsResponse = await fetch(`${API_URL}/appointments/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
       // Récupérer les patients de la clinique
-      const patientsResponse = await fetch('http://localhost:8000/api/clinic-patients/', {
+      const patientsResponse = await fetch(`${API_URL}/clinic-patients/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -92,7 +93,7 @@ const ReceptionistDashboard = () => {
   const fetchAppointments = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8000/api/appointments/', {
+      const response = await fetch(`${API_URL}/appointments/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -159,7 +160,7 @@ const ReceptionistDashboard = () => {
   const fetchPatients = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8000/api/clinic-patients/', {
+      const response = await fetch(`${API_URL}/clinic-patients/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

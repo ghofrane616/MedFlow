@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FiUser, FiMail, FiLock, FiPhone, FiCalendar, FiAlertCircle, FiMapPin } from 'react-icons/fi';
 import { register } from '../utils/auth';
 import '../styles/Auth.css';
+import { API_URL } from '../config';
 
 /**
  * Page d'inscription MedFlow
@@ -45,7 +46,7 @@ const RegisterPage = () => {
 
   const fetchClinics = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/clinics/');
+      const response = await fetch(`${API_URL}/clinics/`);
       if (response.ok) {
         const data = await response.json();
         setClinics(data);

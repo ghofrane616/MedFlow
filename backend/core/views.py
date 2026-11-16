@@ -1,4 +1,5 @@
-from django.shortcuts import render
+import logging
+
 from django.db.models import Q
 from rest_framework import status, generics, permissions, viewsets, serializers
 from rest_framework.decorators import api_view, permission_classes, action
@@ -21,7 +22,7 @@ from .serializers import (
     PrescriptionSerializer, PrescriptionCreateSerializer, PrescriptionMedicationSerializer
 )
 
-# Create your views here.
+logger = logging.getLogger(__name__)
 
 class UserRegistrationView(generics.CreateAPIView):
     """
@@ -767,7 +768,6 @@ def create_user_view(request):
 
         # Créer l'utilisateur
         try:
-            print(f"DEBUG: Création utilisateur avec data: {data}")
             user = User.objects.create_user(
                 username=data.get('username'),
                 email=data.get('email'),
@@ -778,11 +778,8 @@ def create_user_view(request):
                 date_of_birth=data.get('date_of_birth'),
                 user_type=user_type
             )
-            print(f"DEBUG: Utilisateur créé: {user}")
         except Exception as e:
-            import traceback
-            print(f"DEBUG: Erreur création utilisateur: {str(e)}")
-            print(traceback.format_exc())
+            logger.exception("Erreur lors de la création de l'utilisateur")
             return Response({
                 'error': f'Erreur lors de la création de l\'utilisateur: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
@@ -981,9 +978,7 @@ def create_user_view(request):
         }, status=status.HTTP_201_CREATED)
 
     except Exception as e:
-        import traceback
-        print(f"Erreur lors de la création d'utilisateur: {str(e)}")
-        print(traceback.format_exc())
+        logger.exception("Erreur lors de la création d'utilisateur")
         return Response({
             'error': f'Erreur: {str(e)}'
         }, status=status.HTTP_400_BAD_REQUEST)

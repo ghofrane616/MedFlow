@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiMenu, FiX, FiLogOut, FiHome, FiUsers, FiCalendar, FiFileText, FiUser, FiMessageSquare } from 'react-icons/fi';
 import { logout, getUser, getAccessToken } from '../utils/auth';
 import '../styles/Layout.css';
+import { API_URL } from '../config';
 
 /**
  * Composant Layout principal pour MedFlow
@@ -20,7 +21,7 @@ const Layout = ({ children }) => {
   const fetchProfileData = async () => {
     try {
       const token = getAccessToken();
-      const response = await fetch('http://localhost:8000/api/auth/profile/', {
+      const response = await fetch(`${API_URL}/auth/profile/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -37,7 +38,7 @@ const Layout = ({ children }) => {
   const fetchUnreadMessagesCount = async () => {
     try {
       const token = getAccessToken();
-      const response = await fetch('http://localhost:8000/api/conversations/', {
+      const response = await fetch(`${API_URL}/conversations/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

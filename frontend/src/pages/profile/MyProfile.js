@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AlertModal from '../../components/AlertModal';
 import '../../styles/Profile.css';
+import { API_URL } from '../../config';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000/api';
 
 const MyProfile = () => {
   const navigate = useNavigate();
@@ -39,13 +39,10 @@ const MyProfile = () => {
       }
 
       const data = await response.json();
-      console.log('Données du profil:', data);
-      console.log('Profile picture URL:', data.profile_picture_url);
       setUser(data);
 
       // Si l'utilisateur a déjà une photo, l'afficher
       if (data.profile_picture_url) {
-        console.log('URL de l\'image:', data.profile_picture_url);
         setPreviewUrl(data.profile_picture_url);
       }
     } catch (error) {

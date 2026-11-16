@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import { getAccessToken } from '../../utils/auth';
 import '../../styles/CreateService.css';
+import { API_URL } from '../../config';
 
 const EditService = () => {
   const { serviceId } = useParams();
@@ -40,7 +41,7 @@ const EditService = () => {
   const fetchClinics = async () => {
     try {
       const token = getAccessToken();
-      const response = await fetch('http://localhost:8000/api/clinics/', {
+      const response = await fetch(`${API_URL}/clinics/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -55,7 +56,7 @@ const EditService = () => {
   const fetchService = async () => {
     try {
       const token = getAccessToken();
-      const response = await fetch(`http://localhost:8000/api/services/${serviceId}/`, {
+      const response = await fetch(`${API_URL}/services/${serviceId}/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -95,7 +96,7 @@ const EditService = () => {
 
     try {
       const token = getAccessToken();
-      const response = await fetch(`http://localhost:8000/api/services/${serviceId}/`, {
+      const response = await fetch(`${API_URL}/services/${serviceId}/`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

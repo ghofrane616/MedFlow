@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiUser, FiMail, FiPhone, FiCalendar } from 'react-icons/fi';
 import '../../styles/EditUser.css';
+import { API_URL } from '../../config';
 
 const EditUser = () => {
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ const EditUser = () => {
       setLoading(true);
       const token = localStorage.getItem('access_token');
 
-      const response = await fetch(`http://localhost:8000/api/users/${userId}/`, {
+      const response = await fetch(`${API_URL}/users/${userId}/`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -149,7 +150,7 @@ const EditUser = () => {
   const fetchServices = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8000/api/services/', {
+      const response = await fetch(`${API_URL}/services/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -164,7 +165,7 @@ const EditUser = () => {
   const fetchReceptionistServices = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`http://localhost:8000/api/users/${userId}/`, {
+      const response = await fetch(`${API_URL}/users/${userId}/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -224,7 +225,7 @@ const EditUser = () => {
         dataToSend.services = selectedServices;
       }
 
-      const response = await fetch(`http://localhost:8000/api/users/${userId}/`, {
+      const response = await fetch(`${API_URL}/users/${userId}/`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -251,7 +252,7 @@ const EditUser = () => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
       try {
         const token = localStorage.getItem('access_token');
-        const response = await fetch(`http://localhost:8000/api/users/${userId}/`, {
+        const response = await fetch(`${API_URL}/users/${userId}/`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -276,7 +277,7 @@ const EditUser = () => {
       setError('');
       const token = localStorage.getItem('access_token');
 
-      const response = await fetch(`http://localhost:8000/api/users/${userId}/reset-password/`, {
+      const response = await fetch(`${API_URL}/users/${userId}/reset-password/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -305,7 +306,7 @@ const EditUser = () => {
       setError('');
       const token = localStorage.getItem('access_token');
 
-      const response = await fetch(`http://localhost:8000/api/users/${userId}/toggle-status/`, {
+      const response = await fetch(`${API_URL}/users/${userId}/toggle-status/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

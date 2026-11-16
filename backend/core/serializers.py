@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
@@ -5,6 +7,8 @@ from .models import (
     User, Clinic, Patient, Doctor, Receptionist, Service,
     Appointment, Message, Conversation, Prescription, PrescriptionMedication
 )
+
+logger = logging.getLogger(__name__)
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -118,8 +122,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 insurance_number=insurance_number,
                 insurance_provider=insurance_provider
             )
-        except Exception as e:
-            print(f"Erreur lors de la création du profil patient: {e}")
+        except Exception:
+            logger.exception("Erreur lors de la création du profil patient")
 
         return user
 
@@ -405,14 +409,11 @@ class AppointmentCreateUpdateSerializer(serializers.ModelSerializer):
         if service and hasattr(service, 'duration') and service.duration:
             attrs['duration'] = service.duration
             appointment_duration = service.duration
-            print(f"DEBUG validate(): Setting duration from service: {service.duration} minutes for service: {service.name}")
         elif duration:
             appointment_duration = duration
-            print(f"DEBUG validate(): Using provided duration: {duration} minutes")
         else:
             attrs['duration'] = 30
             appointment_duration = 30
-            print(f"DEBUG validate(): Using default duration: 30 minutes")
 
         # Calculer l'heure de fin du rendez-vous
         appointment_end = appointment_date + timedelta(minutes=appointment_duration)
@@ -464,12 +465,8 @@ class AppointmentCreateUpdateSerializer(serializers.ModelSerializer):
         # Toujours utiliser la durée du service si disponible
         if service and hasattr(service, 'duration') and service.duration:
             validated_data['duration'] = service.duration
-            print(f"DEBUG: Setting duration from service: {service.duration} minutes")
         elif 'duration' not in validated_data or validated_data['duration'] is None:
             validated_data['duration'] = 30  # Durée par défaut
-            print(f"DEBUG: Using default duration: 30 minutes")
-        else:
-            print(f"DEBUG: Using provided duration: {validated_data['duration']} minutes")
 
         return super().create(validated_data)
 

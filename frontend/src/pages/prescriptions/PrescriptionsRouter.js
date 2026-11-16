@@ -11,14 +11,8 @@ const PrescriptionsRouter = () => {
 
   useEffect(() => {
     const user = getUser();
-    const userFromStorage = localStorage.getItem('user');
-    
-    console.log('🔍 PrescriptionsRouter - Raw localStorage:', userFromStorage);
-    console.log('🔍 PrescriptionsRouter - Parsed user:', user);
-    console.log('🔍 PrescriptionsRouter - User type:', user?.user_type);
-    
+
     if (!user) {
-      console.log('❌ No user found, redirecting to login');
       navigate('/login');
       return;
     }
@@ -31,19 +25,13 @@ const PrescriptionsRouter = () => {
     return <div className="loading">Chargement...</div>;
   }
 
-  console.log('🎯 Rendering component for user type:', userType);
-
   if (userType === 'patient') {
-    console.log('✅ Rendering PatientPrescriptions');
     return <PatientPrescriptions />;
   } else if (userType === 'doctor') {
-    console.log('✅ Rendering DoctorPrescriptions');
     return <DoctorPrescriptions />;
   } else if (userType === 'admin') {
-    console.log('✅ Rendering DoctorPrescriptions for admin');
     return <DoctorPrescriptions />;
   } else {
-    console.log('⚠️ Unknown user type, redirecting to dashboard');
     navigate('/dashboard');
     return null;
   }

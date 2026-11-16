@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiSearch, FiTrash2, FiEdit2, FiMapPin, FiPhone, FiMail } from 'react-icons/fi';
 import '../../styles/ClinicsList.css';
+import { API_URL } from '../../config';
 
 const ClinicsList = () => {
   const navigate = useNavigate();
@@ -20,8 +21,6 @@ const ClinicsList = () => {
       setLoading(true);
       const token = localStorage.getItem('access_token');
 
-      console.log('Token:', token);
-      console.log('Fetching clinics from: http://localhost:8000/api/clinics/');
 
       if (!token) {
         setError('Erreur: Token d\'authentification manquant. Veuillez vous reconnecter.');
@@ -29,25 +28,22 @@ const ClinicsList = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:8000/api/clinics/', {
+      const response = await fetch(`${API_URL}/clinics/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      console.log('Response status:', response.status);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Clinics data:', data);
         const clinicsArray = Array.isArray(data) ? data : [];
         setClinic(clinicsArray);
         setFilteredClinics(clinicsArray);
         setError('');
       } else {
         const errorData = await response.json();
-        console.log('Error response:', errorData);
         setError(errorData.detail || 'Erreur lors de la récupération des cliniques');
       }
     } catch (err) {
@@ -75,7 +71,7 @@ const ClinicsList = () => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette clinique ?')) {
       try {
         const token = localStorage.getItem('access_token');
-        const response = await fetch(`http://localhost:8000/api/clinics/${clinicId}/`, {
+        const response = await fetch(`${API_URL}/clinics/${clinicId}/`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`

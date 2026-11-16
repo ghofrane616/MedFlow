@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiUser, FiMail, FiPhone, FiCalendar, FiLock, FiArrowLeft } from 'react-icons/fi';
 import { refreshAccessToken } from '../../utils/auth';
 import '../../styles/CreateUser.css';
+import { API_URL } from '../../config';
 
 const CreateUser = () => {
   const navigate = useNavigate();
@@ -63,7 +64,7 @@ const CreateUser = () => {
   const fetchClinics = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8000/api/clinics/', {
+      const response = await fetch(`${API_URL}/clinics/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -78,7 +79,7 @@ const CreateUser = () => {
   const fetchSpecialties = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8000/api/services/', {
+      const response = await fetch(`${API_URL}/services/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -170,7 +171,7 @@ const CreateUser = () => {
       try {
         token = await refreshAccessToken();
       } catch (err) {
-        console.log('Token refresh failed, using existing token');
+        // Échec du rafraîchissement : on garde le token existant.
       }
 
       const payload = {
@@ -232,9 +233,8 @@ const CreateUser = () => {
         payload.is_available = formData.is_available;
       }
 
-      console.log('Payload envoyé:', payload);
 
-      const response = await fetch('http://localhost:8000/api/users/create-user/', {
+      const response = await fetch(`${API_URL}/users/create-user/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -243,9 +243,7 @@ const CreateUser = () => {
         body: JSON.stringify(payload)
       });
 
-      console.log('Réponse status:', response.status);
       const responseData = await response.json();
-      console.log('Réponse data:', responseData);
 
       if (response.ok) {
         setSuccess(`✅ ${userType === 'admin' ? 'Admin' : userType === 'doctor' ? 'Médecin' : userType === 'receptionist' ? 'Réceptionniste' : 'Patient'} créé avec succès!`);

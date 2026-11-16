@@ -11,6 +11,7 @@ import {
 import { getPatients } from '../../api/patients';
 import { getAccessToken } from '../../utils/auth';
 import '../../styles/Appointments.css';
+import { API_URL } from '../../config';
 
 export default function AppointmentEdit() {
   const { id } = useParams();
@@ -38,7 +39,6 @@ export default function AppointmentEdit() {
       setError(null);
 
       const token = getAccessToken();
-      const API_URL = 'http://localhost:8000/api';
 
       // Charger le rendez-vous
       const appointmentData = await getAppointment(id);

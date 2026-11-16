@@ -1,7 +1,7 @@
 // API pour les patients
 import { getAccessToken } from '../utils/auth';
+import { API_URL } from '../config';
 
-const API_URL = 'http://localhost:8000/api';
 
 // Lister tous les patients
 export const getPatients = async () => {

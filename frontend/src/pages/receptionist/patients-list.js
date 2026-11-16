@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiSearch, FiPhone, FiMail, FiCalendar } from 'react-icons/fi';
 import '../../styles/PatientsList.css';
+import { API_URL } from '../../config';
 
 const ReceptionistPatientsList = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const ReceptionistPatientsList = () => {
       setLoading(true);
       const token = localStorage.getItem('access_token');
 
-      const response = await fetch('http://localhost:8000/api/clinic-patients/', {
+      const response = await fetch(`${API_URL}/clinic-patients/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

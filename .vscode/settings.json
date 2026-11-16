@@ -1,1 +1,0 @@
-{"files.exclude":{"**/node_modules":true,"**/__pycache__":true},"files.watcherExclude":{"**/node_modules/**":true,"**/__pycache__/**":true},"git.ignoreLimitWarning":true,"git.autofetch":false}

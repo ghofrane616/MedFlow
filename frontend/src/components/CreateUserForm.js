@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAccessToken } from '../utils/auth';
+import { API_URL } from '../config';
 
 const CreateUserForm = ({ onUserCreated }) => {
   const [formData, setFormData] = useState({
@@ -28,7 +29,7 @@ const CreateUserForm = ({ onUserCreated }) => {
   const fetchClinics = async () => {
     try {
       const token = getAccessToken();
-      const response = await fetch('http://localhost:8000/api/clinics/', {
+      const response = await fetch(`${API_URL}/clinics/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -71,7 +72,7 @@ const CreateUserForm = ({ onUserCreated }) => {
         user_type: formData.user_type,
       };
 
-      const userResponse = await fetch('http://localhost:8000/api/auth/register/', {
+      const userResponse = await fetch(`${API_URL}/auth/register/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -120,7 +121,7 @@ const CreateUserForm = ({ onUserCreated }) => {
   };
 
   const createReceptionist = async (userId, token) => {
-    const response = await fetch('http://localhost:8000/api/receptionists/', {
+    const response = await fetch(`${API_URL}/receptionists/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -144,7 +145,7 @@ const CreateUserForm = ({ onUserCreated }) => {
   };
 
   const createDoctor = async (userId, token) => {
-    const response = await fetch('http://localhost:8000/api/doctors/', {
+    const response = await fetch(`${API_URL}/doctors/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

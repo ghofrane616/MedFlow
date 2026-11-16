@@ -1,9 +1,9 @@
+import { API_URL } from '../config';
 /**
  * API Client pour la Messagerie
  * Gère les conversations et les messages
  */
 
-const API_URL = 'http://localhost:8000/api';
 
 const getAccessToken = () => {
   return localStorage.getItem('access_token');

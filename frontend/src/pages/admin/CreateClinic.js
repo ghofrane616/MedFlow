@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiMapPin, FiPhone, FiMail } from 'react-icons/fi';
 import '../../styles/CreateClinic.css';
+import { API_URL } from '../../config';
 
 const CreateClinic = () => {
   const navigate = useNavigate();
@@ -57,15 +58,13 @@ const CreateClinic = () => {
       setLoading(true);
       const token = localStorage.getItem('access_token');
 
-      console.log('Token:', token);
-      console.log('Form data:', formData);
 
       if (!token) {
         setError('Erreur: Token d\'authentification manquant. Veuillez vous reconnecter.');
         return;
       }
 
-      const response = await fetch('http://localhost:8000/api/clinics/', {
+      const response = await fetch(`${API_URL}/clinics/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,7 +73,6 @@ const CreateClinic = () => {
         body: JSON.stringify(formData)
       });
 
-      console.log('Response status:', response.status);
 
       if (response.ok) {
         setSuccess('✅ Clinique créée avec succès!');
@@ -83,7 +81,6 @@ const CreateClinic = () => {
         }, 1500);
       } else {
         const data = await response.json();
-        console.log('Error response:', data);
         setError(data.detail || 'Erreur lors de la création de la clinique');
       }
     } catch (err) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/Dashboard.css';
+import { API_URL } from '../../config';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -28,17 +29,17 @@ const AdminDashboard = () => {
       const token = localStorage.getItem('access_token');
 
       // Récupérer tous les utilisateurs
-      const usersResponse = await fetch('http://localhost:8000/api/users/list/', {
+      const usersResponse = await fetch(`${API_URL}/users/list/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
       // Récupérer les cliniques
-      const clinicsResponse = await fetch('http://localhost:8000/api/clinics/', {
+      const clinicsResponse = await fetch(`${API_URL}/clinics/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
       // Récupérer les services
-      const servicesResponse = await fetch('http://localhost:8000/api/services/', {
+      const servicesResponse = await fetch(`${API_URL}/services/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -95,7 +96,7 @@ const AdminDashboard = () => {
       const activitiesList = [];
 
       // Récupérer les utilisateurs récents
-      const usersResponse = await fetch('http://localhost:8000/api/users/list/', {
+      const usersResponse = await fetch(`${API_URL}/users/list/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -116,7 +117,7 @@ const AdminDashboard = () => {
       }
 
       // Récupérer les cliniques récentes
-      const clinicsResponse = await fetch('http://localhost:8000/api/clinics/', {
+      const clinicsResponse = await fetch(`${API_URL}/clinics/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -137,7 +138,7 @@ const AdminDashboard = () => {
       }
 
       // Récupérer les patients récents
-      const patientsResponse = await fetch('http://localhost:8000/api/users/list/?user_type=patient', {
+      const patientsResponse = await fetch(`${API_URL}/users/list/?user_type=patient`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

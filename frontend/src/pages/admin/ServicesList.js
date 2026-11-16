@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiEdit2, FiTrash2, FiPlus } from 'react-icons/fi';
 import { getAccessToken } from '../../utils/auth';
 import '../../styles/ServicesList.css';
+import { API_URL } from '../../config';
 
 const ServicesList = () => {
   const [services, setServices] = useState([]);
@@ -30,7 +31,7 @@ const ServicesList = () => {
     try {
       setLoading(true);
       const token = getAccessToken();
-      const response = await fetch('http://localhost:8000/api/services/', {
+      const response = await fetch(`${API_URL}/services/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -55,7 +56,7 @@ const ServicesList = () => {
 
     try {
       const token = getAccessToken();
-      const response = await fetch(`http://localhost:8000/api/services/${serviceId}/`, {
+      const response = await fetch(`${API_URL}/services/${serviceId}/`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

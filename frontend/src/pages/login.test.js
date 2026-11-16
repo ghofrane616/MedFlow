@@ -19,7 +19,7 @@ describe('LoginPage', () => {
     );
 
     expect(screen.getByText('Connexion')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Entrez votre nom d\'utilisateur')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Entrez votre adresse email')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Entrez votre mot de passe')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Se connecter/i })).toBeInTheDocument();
   });
@@ -52,7 +52,7 @@ describe('LoginPage', () => {
       </BrowserRouter>
     );
 
-    const usernameInput = screen.getByPlaceholderText('Entrez votre nom d\'utilisateur');
+    const usernameInput = screen.getByPlaceholderText('Entrez votre adresse email');
     const passwordInput = screen.getByPlaceholderText('Entrez votre mot de passe');
     const submitButton = screen.getByRole('button', { name: /Se connecter/i });
 
@@ -74,7 +74,7 @@ describe('LoginPage', () => {
       </BrowserRouter>
     );
 
-    const usernameInput = screen.getByPlaceholderText('Entrez votre nom d\'utilisateur');
+    const usernameInput = screen.getByPlaceholderText('Entrez votre adresse email');
     const passwordInput = screen.getByPlaceholderText('Entrez votre mot de passe');
     const submitButton = screen.getByRole('button', { name: /Se connecter/i });
 
@@ -85,17 +85,6 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Identifiants invalides')).toBeInTheDocument();
     });
-  });
-
-  test('affiche les identifiants de démonstration', () => {
-    render(
-      <BrowserRouter>
-        <LoginPage />
-      </BrowserRouter>
-    );
-
-    expect(screen.getByText('Identifiants de démonstration:')).toBeInTheDocument();
-    expect(screen.getByText(/admin \/ admin123/)).toBeInTheDocument();
   });
 
   test('affiche un lien vers la page d\'inscription', () => {

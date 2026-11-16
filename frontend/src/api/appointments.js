@@ -1,6 +1,6 @@
 import { getAccessToken } from '../utils/auth';
+import { API_URL } from '../config';
 
-const API_URL = 'http://localhost:8000/api';
 
 export const getAppointments = async () => {
   const token = getAccessToken();

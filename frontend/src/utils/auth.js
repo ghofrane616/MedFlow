@@ -1,9 +1,9 @@
+import { API_URL as API_BASE_URL } from '../config';
 /**
  * Utilitaires d'authentification JWT pour MedFlow
  * Gestion des tokens, stockage local et requêtes API
  */
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 /**
  * Stocke les tokens JWT dans le localStorage

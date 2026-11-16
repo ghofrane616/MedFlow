@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiSave } from 'react-icons/fi';
 import '../../styles/EditClinic.css';
+import { API_URL } from '../../config';
 
 const EditClinic = () => {
   const navigate = useNavigate();
@@ -30,9 +31,7 @@ const EditClinic = () => {
       setLoading(true);
       const token = localStorage.getItem('access_token');
 
-      console.log('Fetching clinic with ID:', clinicId);
-      const url = `http://localhost:8000/api/clinics/${clinicId}/`;
-      console.log('URL:', url);
+      const url = `${API_URL}/clinics/${clinicId}/`;
 
       const response = await fetch(url, {
         headers: {
@@ -40,11 +39,9 @@ const EditClinic = () => {
         }
       });
 
-      console.log('Response status:', response.status);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Clinic data:', data);
         setFormData({
           name: data.name || '',
           address: data.address || '',
@@ -60,8 +57,6 @@ const EditClinic = () => {
         });
         setError('');
       } else {
-        const errorData = await response.json();
-        console.log('Error response:', errorData);
         setError('Erreur lors de la récupération de la clinique');
       }
     } catch (err) {
@@ -112,11 +107,8 @@ const EditClinic = () => {
       setSaving(true);
       const token = localStorage.getItem('access_token');
 
-      console.log('Submitting clinic with ID:', clinicId);
-      console.log('Form data:', formData);
 
-      const url = `http://localhost:8000/api/clinics/${clinicId}/`;
-      console.log('PUT URL:', url);
+      const url = `${API_URL}/clinics/${clinicId}/`;
 
       const response = await fetch(url, {
         method: 'PUT',
@@ -127,7 +119,6 @@ const EditClinic = () => {
         body: JSON.stringify(formData)
       });
 
-      console.log('PUT Response status:', response.status);
 
       if (response.ok) {
         setSuccess('Clinique modifiée avec succès !');
@@ -137,7 +128,6 @@ const EditClinic = () => {
         }, 1500);
       } else {
         const errorData = await response.json();
-        console.log('PUT Error response:', errorData);
         setError(errorData.detail || 'Erreur lors de la modification');
       }
     } catch (err) {

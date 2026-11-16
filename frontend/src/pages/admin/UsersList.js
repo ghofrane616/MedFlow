@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FiArrowLeft, FiSearch, FiTrash2, FiEdit2, FiUser, FiPhone, FiMail } from 'react-icons/fi';
 import '../../styles/UsersList.css';
+import { API_URL } from '../../config';
 
 const UsersList = () => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const UsersList = () => {
       setLoading(true);
       const token = localStorage.getItem('access_token');
       
-      let url = 'http://localhost:8000/api/users/list/';
+      let url = `${API_URL}/users/list/`;
       if (userTypeFilter !== 'all') {
         url += `?user_type=${userTypeFilter}`;
       }
@@ -66,7 +67,7 @@ const UsersList = () => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
       try {
         const token = localStorage.getItem('access_token');
-        const response = await fetch(`http://localhost:8000/api/users/${userId}/`, {
+        const response = await fetch(`${API_URL}/users/${userId}/`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`

@@ -1,6 +1,6 @@
 import { getAccessToken } from '../utils/auth';
+import { API_URL } from '../config';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000/api';
 
 /**
  * Récupérer toutes les ordonnances (selon le rôle de l'utilisateur)

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiDownload } from 'react-icons/fi';
 import '../../styles/Reports.css';
+import { API_URL } from '../../config';
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -28,22 +29,22 @@ const Reports = () => {
       const token = localStorage.getItem('access_token');
 
       // Récupérer les utilisateurs
-      const usersResponse = await fetch('http://localhost:8000/api/users/list/', {
+      const usersResponse = await fetch(`${API_URL}/users/list/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
       // Récupérer les cliniques
-      const clinicsResponse = await fetch('http://localhost:8000/api/clinics/', {
+      const clinicsResponse = await fetch(`${API_URL}/clinics/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
       // Récupérer les services
-      const servicesResponse = await fetch('http://localhost:8000/api/services/', {
+      const servicesResponse = await fetch(`${API_URL}/services/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
       // Récupérer les rendez-vous
-      const appointmentsResponse = await fetch('http://localhost:8000/api/appointments/', {
+      const appointmentsResponse = await fetch(`${API_URL}/appointments/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

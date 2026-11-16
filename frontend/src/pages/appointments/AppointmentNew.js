@@ -6,6 +6,7 @@ import AlertModal from '../../components/AlertModal';
 import { createAppointment, getServices } from '../../api/appointments';
 import { getAccessToken } from '../../utils/auth';
 import '../../styles/Appointments.css';
+import { API_URL } from '../../config';
 
 export default function AppointmentNew() {
   const navigate = useNavigate();
@@ -27,7 +28,6 @@ export default function AppointmentNew() {
       setLoading(true);
 
       const token = getAccessToken();
-      const API_URL = 'http://localhost:8000/api';
 
       // Charger les services
       const servicesData = await getServices();
