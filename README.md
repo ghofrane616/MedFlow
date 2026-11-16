@@ -4,7 +4,15 @@ Application web de gestion de cliniques médicales : rendez-vous, dossiers patie
 
 **Stack :** Django 5 · Django REST Framework · JWT (SimpleJWT) · React 19 · React Router · Chart.js · jsPDF
 
-<!-- Captures d'écran : ajouter ici 2 ou 3 images (tableau de bord, prise de rendez-vous, ordonnance), par ex. docs/screenshots/dashboard.png -->
+## Aperçu
+
+| Réceptionniste : planning du jour | Patient : rappels et prochains rendez-vous |
+|---|---|
+| ![Tableau de bord réceptionniste](docs/screenshots/receptionist-dashboard.png) | ![Tableau de bord patient](docs/screenshots/patient-dashboard.png) |
+| **Administrateur : vue d'ensemble** | **Ordonnance avec export PDF** |
+| ![Tableau de bord administrateur](docs/screenshots/admin-dashboard.png) | ![Détail d'une ordonnance](docs/screenshots/prescription-detail.png) |
+
+*Captures réalisées avec des données de démonstration fictives.*
 
 ## Fonctionnalités
 
